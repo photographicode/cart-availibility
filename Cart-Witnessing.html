@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cart Witnessing Availability</title>
     
-    <!-- Tailwind CSS for styling -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- React & ReactDOM (Standalone versions) -->
+    <!-- React & ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel for compiling JSX in the browser -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <style>
@@ -26,34 +24,15 @@
 <body>
     <div id="root"></div>
 
-    <script type="module">
-        // Import Firebase v11 modules securely
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, updateDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Connect to the secure backend environment
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { projectId: "demo" };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // Export Firebase to the global window object so React can use it
-        window.firebaseAPI = {
-            auth, db, doc, setDoc, updateDoc, deleteDoc, onSnapshot, collection,
-            signInAnonymously, signInWithCustomToken, onAuthStateChanged,
-            appId: typeof __app_id !== 'undefined' ? __app_id : 'cart-witnessing-app',
-            initialToken: typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null
-        };
-        
-        // Let React know the database is ready to go
-        window.dispatchEvent(new Event('firebase-initialized'));
-    </script>
-
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- Custom SVG Icons ---
+        // =======================================================================
+        // ⚠️ PASTE YOUR GOOGLE SCRIPT WEB APP URL BELOW:
+        // =======================================================================
+        const SCRIPT_URL = "PASTE_YOUR_COPIED_URL_HERE"; 
+        
+        // --- Icons ---
         const IconMapPin = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>;
         const IconLogOut = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
         const IconLogIn = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>;
@@ -74,7 +53,6 @@
           const [loginError, setLoginError] = useState('');
 
           const [locations, setLocations] = useState([]);
-          const [user, setUser] = useState(null);
           const [isLoading, setIsLoading] = useState(true);
 
           const [newLocName, setNewLocName] = useState('');
@@ -82,107 +60,73 @@
           const [newLocPlusCode, setNewLocPlusCode] = useState('');
           const [newLocDesc, setNewLocDesc] = useState('');
 
-          // Connect to Database on Load
+          // 1. Fetch initial data from Google Sheets
+          const fetchLocations = async () => {
+            if (SCRIPT_URL === "PASTE_YOUR_COPIED_URL_HERE") {
+              setIsLoading(false);
+              return; // Stop if URL isn't set yet
+            }
+            try {
+              const res = await fetch(SCRIPT_URL);
+              const data = await res.json();
+              setLocations(data);
+              setIsLoading(false);
+            } catch (err) {
+              console.error("Failed to fetch data:", err);
+              setIsLoading(false);
+            }
+          };
+
+          // Fetch on load, and check for updates every 10 seconds
           useEffect(() => {
-            const initDb = async () => {
-                const api = window.firebaseAPI;
-                if (!api) return;
-                
-                try {
-                    if (api.initialToken) {
-                        await api.signInWithCustomToken(api.auth, api.initialToken);
-                    } else {
-                        await api.signInAnonymously(api.auth);
-                    }
-
-                    api.onAuthStateChanged(api.auth, (currentUser) => {
-                        setUser(currentUser);
-                    });
-                } catch (err) {
-                    console.error("Auth error:", err);
-                }
-            };
-
-            if (window.firebaseAPI) initDb();
-            else window.addEventListener('firebase-initialized', initDb);
-            
-            return () => window.removeEventListener('firebase-initialized', initDb);
+            fetchLocations();
+            const interval = setInterval(fetchLocations, 10000);
+            return () => clearInterval(interval);
           }, []);
 
-          // Sync locations in real-time
-          useEffect(() => {
-              if (!user) return;
-              const api = window.firebaseAPI;
-              const q = api.collection(api.db, 'artifacts', api.appId, 'public', 'data', 'locations');
-              
-              const unsubscribe = api.onSnapshot(q, (snapshot) => {
-                  const locs = [];
-                  snapshot.forEach(doc => locs.push({ id: doc.id, ...doc.data() }));
-                  // Sort by creation time so they stay in order
-                  locs.sort((a, b) => a.createdAt - b.createdAt);
-                  setLocations(locs);
-                  setIsLoading(false);
-              }, (err) => {
-                  console.error("Database sync error:", err);
-                  setIsLoading(false);
-              });
-
-              return () => unsubscribe();
-          }, [user]);
-
-          // Helper to update a single location in the database
-          const updateDbLocation = async (id, dataObj) => {
-              if (!user) return;
-              const api = window.firebaseAPI;
-              const docRef = api.doc(api.db, 'artifacts', api.appId, 'public', 'data', 'locations', id);
-              await api.updateDoc(docRef, dataObj);
+          // Helper to send updates to Google Sheets in the background
+          const updateSheet = (action, payload) => {
+             fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' }, // "text/plain" bypasses strict CORS errors
+                body: JSON.stringify({ action, payload })
+             }).catch(console.error);
           };
 
           const handleLogin = (e) => {
             e.preventDefault();
             if (passwordInput === 'Devanahalli_Cart1914') {
-              setIsAdmin(true);
-              setShowLogin(false);
-              setPasswordInput('');
-              setLoginError('');
-            } else {
-              setLoginError('Incorrect password');
-            }
+              setIsAdmin(true); setShowLogin(false); setPasswordInput(''); setLoginError('');
+            } else { setLoginError('Incorrect password'); }
           };
 
-          const handleLogout = () => setIsAdmin(false);
-
-          const addLocation = async (e) => {
+          const addLocation = (e) => {
             e.preventDefault();
-            if (!newLocName || !newLocLink || !newLocPlusCode || !user) return;
-            
-            const api = window.firebaseAPI;
-            const newDocRef = api.doc(api.collection(api.db, 'artifacts', api.appId, 'public', 'data', 'locations'));
+            if (!newLocName || !newLocLink || !newLocPlusCode) return;
             
             const newLoc = {
-              name: newLocName,
-              link: newLocLink, 
-              plusCode: newLocPlusCode,
-              description: newLocDesc,
-              volunteers: [],
-              locked: false,
-              createdAt: Date.now()
+              id: Date.now(), name: newLocName, link: newLocLink, 
+              plusCode: newLocPlusCode, description: newLocDesc,
+              volunteers: [], locked: false
             };
             
-            await api.setDoc(newDocRef, newLoc);
+            // Optimistic Update (update UI instantly)
+            setLocations([...locations, newLoc]);
+            
+            // Send to Google Sheets
+            updateSheet('ADD_LOCATION', newLoc);
             
             setNewLocName(''); setNewLocLink(''); setNewLocPlusCode(''); setNewLocDesc('');
           };
 
           const clearVolunteers = (locId) => {
-              updateDbLocation(locId, { volunteers: [], locked: false });
+              setLocations(locations.map(l => l.id === locId ? { ...l, volunteers: [], locked: false } : l));
+              updateSheet('UPDATE_LOCATION', { id: locId, volunteers: [], locked: false });
           };
 
-          const deleteLocation = async (locId) => {
-              if (!user) return;
-              const api = window.firebaseAPI;
-              const docRef = api.doc(api.db, 'artifacts', api.appId, 'public', 'data', 'locations', locId);
-              await api.deleteDoc(docRef);
+          const deleteLocation = (locId) => {
+              setLocations(locations.filter(l => l.id !== locId));
+              updateSheet('DELETE_LOCATION', { id: locId });
           };
 
           const deleteVolunteer = (locId, index) => {
@@ -190,18 +134,23 @@
               if (!loc) return;
               const newVols = [...loc.volunteers];
               newVols.splice(index, 1);
-              updateDbLocation(locId, { volunteers: newVols, locked: false }); // Unlocks if it drops below 4
+              
+              setLocations(locations.map(l => l.id === locId ? { ...l, volunteers: newVols, locked: false } : l));
+              updateSheet('UPDATE_LOCATION', { id: locId, volunteers: newVols, locked: false });
           };
 
           const toggleLock = (locId, forceState = null) => {
               const loc = locations.find(l => l.id === locId);
               if (!loc) return;
               const newState = forceState !== null ? forceState : !loc.locked;
-              updateDbLocation(locId, { locked: newState });
+              
+              setLocations(locations.map(l => l.id === locId ? { ...l, locked: newState } : l));
+              updateSheet('UPDATE_LOCATION', { id: locId, locked: newState });
           };
 
           const renameLocation = (locId, newName) => {
-              updateDbLocation(locId, { name: newName });
+              setLocations(locations.map(l => l.id === locId ? { ...l, name: newName } : l));
+              updateSheet('UPDATE_LOCATION', { id: locId, name: newName });
           };
 
           const addVolunteer = (locId, name) => {
@@ -211,7 +160,9 @@
             
             const newVols = [...loc.volunteers, name.trim()];
             const isNowLocked = newVols.length >= 4;
-            updateDbLocation(locId, { volunteers: newVols, locked: isNowLocked });
+            
+            setLocations(locations.map(l => l.id === locId ? { ...l, volunteers: newVols, locked: isNowLocked } : l));
+            updateSheet('UPDATE_LOCATION', { id: locId, volunteers: newVols, locked: isNowLocked });
           };
 
           return (
@@ -221,7 +172,7 @@
                   Cart Witnessing <span className="font-semibold text-blue-400">Availability</span>
                 </h1>
                 {isAdmin ? (
-                  <button onClick={handleLogout} className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-full border border-white/10">
+                  <button onClick={() => setIsAdmin(false)} className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-full border border-white/10">
                     <IconLogOut size={16} /> Admin Logout
                   </button>
                 ) : (
@@ -232,6 +183,12 @@
               </header>
 
               <main className="max-w-6xl mx-auto p-6 md:p-12 space-y-12">
+                {SCRIPT_URL === "PASTE_YOUR_COPIED_URL_HERE" && (
+                    <div className="bg-orange-500/10 border border-orange-500/30 text-orange-400 p-4 rounded-xl text-center shadow-lg">
+                       ⚠️ <b>Setup Incomplete:</b> You need to paste your Google Apps Script URL into the HTML code where it says <code>SCRIPT_URL</code>.
+                    </div>
+                )}
+
                 {isAdmin && (
                   <div className="bg-[#1e293b]/40 border border-blue-500/20 p-6 rounded-2xl backdrop-blur-md shadow-2xl">
                     <h2 className="text-lg font-medium text-blue-300 mb-4 flex items-center gap-2">
@@ -244,7 +201,7 @@
                         <input type="text" placeholder="Plus Code / Search (e.g. 6PHF+V5 Devanahalli...)" value={newLocPlusCode} onChange={(e) => setNewLocPlusCode(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors" required />
                         <input type="text" placeholder="Description / Instructions (Optional)" value={newLocDesc} onChange={(e) => setNewLocDesc(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors" />
                       </div>
-                      <button type="submit" disabled={!user} className="w-full md:w-auto self-end bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-medium transition-colors shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 disabled:opacity-50">
+                      <button type="submit" className="w-full md:w-auto self-end bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-medium transition-colors shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">
                         <IconPlus size={18} /> Add Location
                       </button>
                     </form>
@@ -254,10 +211,10 @@
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {isLoading ? (
                       <div className="col-span-full text-center py-20 text-slate-500 font-light flex justify-center items-center gap-3">
-                          <IconRotateCcw size={20} className="animate-spin" /> Loading locations...
+                          <IconRotateCcw size={20} className="animate-spin" /> Connecting to Google Sheets...
                       </div>
                   ) : locations.length === 0 ? (
-                      <div className="col-span-full text-center py-20 text-slate-500 font-light">No locations added yet. Log in as admin to add one!</div>
+                      <div className="col-span-full text-center py-20 text-slate-500 font-light">No locations added yet. Log in to add one!</div>
                   ) : (
                       locations.map(loc => (
                         <LocationCard 
@@ -271,7 +228,6 @@
                 </div>
               </main>
 
-              {}
               {showLogin && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                   <div className="bg-[#111827] border border-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl relative">
@@ -304,7 +260,6 @@
             <div className={`bg-[#1e293b]/40 border ${location.locked ? 'border-red-500/20' : 'border-slate-800'} rounded-3xl overflow-hidden backdrop-blur-md flex flex-col shadow-xl`}>
               <div className="p-6 border-b border-white/5 flex justify-between items-start bg-black/20 relative">
                 
-                {/* Admin Delete Entire Location Button */}
                 {isAdmin && (
                     <button onClick={() => deleteLocation(location.id)} className="absolute top-6 right-6 text-slate-600 hover:text-red-500 transition-colors" title="Delete Entire Location">
                         <IconTrash2 size={18} />
