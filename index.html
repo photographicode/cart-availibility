@@ -62,7 +62,7 @@
 
           // 1. Fetch initial data from Google Sheets
           const fetchLocations = async () => {
-            if (SCRIPT_URL === "PASTE_YOUR_COPIED_URL_HERE") {
+            if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzvBW91Ij4cXpanMbobZA82o0UaKWNQKwRi_D7UrcP4Zj7gtMdGIBhUVM3-5IbFsEbHpA/exec") {
               setIsLoading(false);
               return; // Stop if URL isn't set yet
             }
@@ -211,7 +211,7 @@
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {isLoading ? (
                       <div className="col-span-full text-center py-20 text-slate-500 font-light flex justify-center items-center gap-3">
-                          <IconRotateCcw size={20} className="animate-spin" /> Connecting to Google Sheets...
+                          <IconRotateCcw size={20} className="animate-spin" /> Connecting to Database...
                       </div>
                   ) : locations.length === 0 ? (
                       <div className="col-span-full text-center py-20 text-slate-500 font-light">No locations added yet. Log in to add one!</div>
