@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cart Witnessing Availability</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- React & ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -193,6 +191,7 @@
                   Cart Witnessing <span className="font-semibold text-blue-400">Availability</span>
                 </h1>
                 <div className="flex items-center gap-3">
+                  {/* ADMIN WHATSAPP LINK - STRICTLY FORMATTED */}
                   <a href={`https://wa.me/${adminPhone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-green-400 hover:text-green-300 transition-colors bg-green-500/10 px-4 py-2 rounded-full border border-green-500/20 shadow-lg shadow-green-500/5">
                     <IconHeadset size={16} /> <span className="hidden md:inline">Contact Admin</span>
                   </a>
@@ -354,6 +353,7 @@
                         <IconMapPin size={14} /> Maps <IconExternalLink size={12} />
                       </a>
                       
+                      {/* LOCATION WHATSAPP LINK - STRICTLY FORMATTED */}
                       {location.contactPhone && (
                         <a href={`https://wa.me/${location.contactPhone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-sm text-green-400 flex items-center gap-1.5 hover:text-green-300 transition-colors w-fit bg-green-500/10 px-3 py-1.5 rounded-lg border border-green-500/20">
                           <IconPhone size={14} /> {location.contactName ? `Contact ${location.contactName}` : 'Contact'}
