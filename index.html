@@ -58,6 +58,7 @@
         const IconPhone = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
         const IconHeadset = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>;
         const IconSettings = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
+        const IconInfo = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>;
 
         // Helper: Safely Format WhatsApp Numbers
         const formatWA = (phone) => {
@@ -78,16 +79,15 @@
         function App() {
           const [isAdmin, setIsAdmin] = useState(false);
           const [showLogin, setShowLogin] = useState(false);
+          const [showTour, setShowTour] = useState(false); // Quick Tour State
           const [passwordInput, setPasswordInput] = useState('');
           const [loginError, setLoginError] = useState('');
 
           const [locations, setLocations] = useState([]);
           const [isLoading, setIsLoading] = useState(true);
           
-          // Lock the auto-fetch for 8 seconds after making a change to prevent screen flickering
           const syncLock = useRef(0);
 
-          // Admin Settings
           const [adminPhone, setAdminPhone] = useState(getSavedAdminPhone());
           const handleSaveAdminPhone = (e) => {
               setAdminPhone(e.target.value);
@@ -103,16 +103,12 @@
           const [newLocContactPhone, setNewLocContactPhone] = useState('');
           const [newLocMaxVols, setNewLocMaxVols] = useState(4);
 
-          // 1. Fetch initial data from Google Sheets
           const fetchLocations = async () => {
             if (SCRIPT_URL === "PASTE_YOUR_COPIED_URL_HERE" || !SCRIPT_URL.startsWith("http")) {
               setIsLoading(false);
               return; 
             }
-            // Skip fetching if we just mutated data to avoid overriding the UI optimistically
-            if (Date.now() - syncLock.current < 8000) {
-              return;
-            }
+            if (Date.now() - syncLock.current < 8000) return;
             try {
               const res = await fetch(SCRIPT_URL);
               const data = await res.json();
@@ -124,17 +120,15 @@
             }
           };
 
-          // Fetch on load, and check for updates every 10 seconds
           useEffect(() => {
             fetchLocations();
             const interval = setInterval(fetchLocations, 10000);
             return () => clearInterval(interval);
           }, []);
 
-          // Helper to send updates to Google Sheets - NOW ASYNCHRONOUS
           const updateSheet = async (action, payload) => {
              if(!SCRIPT_URL.startsWith("http")) return;
-             syncLock.current = Date.now(); // Lock auto-refresh temporarily
+             syncLock.current = Date.now();
              try {
                 await fetch(SCRIPT_URL, {
                    method: 'POST',
@@ -144,7 +138,7 @@
              } catch(err) {
                 console.error("Database update failed:", err);
              }
-             syncLock.current = Date.now(); // Reset lock after completion so next interval is delayed
+             syncLock.current = Date.now(); 
           };
 
           const handleLogin = (e) => {
@@ -172,7 +166,7 @@
             };
             
             setLocations([...locations, newLoc]);
-            updateSheet('ADD_LOCATION', newLoc); // Admin action: optimistic update
+            updateSheet('ADD_LOCATION', newLoc); 
             
             setNewLocName(''); setNewLocLink(''); setNewLocPlusCode(''); setNewLocDesc('');
             setNewLocContactName(''); setNewLocContactPhone(''); setNewLocMaxVols(4);
@@ -205,11 +199,10 @@
               const loc = locations.find(l => l.id === locId);
               if (!loc) return;
               const newVols = loc.volunteers ? [...loc.volunteers] : [];
-              newVols[index] = null; // Blank out the exact slot
+              newVols[index] = null; 
               updateLocationField(locId, { volunteers: newVols, locked: false });
           };
 
-          // ⚠️ FIXED: Now async to prevent disappearing names
           const addVolunteer = async (locId, name, slotIndex) => {
             if (!name.trim()) return;
             const loc = locations.find(l => l.id === locId);
@@ -218,23 +211,19 @@
             if (!loc || loc.locked) return;
             
             let newVols = loc.volunteers ? [...loc.volunteers] : [];
-            // Ensure array is long enough to fit the slot
             while(newVols.length < totalCapacity) {
                 newVols.push(null);
             }
             
-            if (newVols[slotIndex]) return; // Slot already taken
+            if (newVols[slotIndex]) return; 
             
-            newVols[slotIndex] = name.trim(); // Place strictly in chosen slot
+            newVols[slotIndex] = name.trim(); 
             
-            // Check if all available slots are filled (excluding nulls)
             const filledCount = newVols.filter(v => v).length;
             const isNowLocked = filledCount >= totalCapacity;
             
-            // WAIT for the database to finish saving before updating the screen
             await updateSheet('UPDATE_LOCATION', { id: locId, volunteers: newVols, locked: isNowLocked });
             
-            // ONLY THEN update local React state
             setLocations(prevLocations => prevLocations.map(l => 
                 l.id === locId ? { ...l, volunteers: newVols, locked: isNowLocked } : l
             ));
@@ -340,11 +329,17 @@
                   </main>
               </div>
 
-              {/* FOOTER: Contact Admin Link */}
-              <footer className="mt-8 py-10 border-t border-white/5 flex justify-center bg-black/30 backdrop-blur-md">
-                  <a href={`https://wa.me/${formatWA(adminPhone)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-green-400 hover:text-green-300 transition-colors bg-green-500/10 px-6 py-3 rounded-full border border-green-500/20 shadow-lg shadow-green-500/5">
-                    <IconHeadset size={18} /> Contact System Admin
-                  </a>
+              {/* FOOTER: Contact Admin & Quick Tour */}
+              <footer className="mt-8 py-8 border-t border-white/5 bg-black/30 backdrop-blur-md">
+                  <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-center gap-6">
+                      <button onClick={() => setShowTour(true)} className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors bg-blue-500/10 px-6 py-3 rounded-full border border-blue-500/20 shadow-lg shadow-blue-500/5">
+                        <IconInfo size={18} /> Quick Tour & Help
+                      </button>
+                      
+                      <a href={`https://wa.me/${formatWA(adminPhone)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-green-400 hover:text-green-300 transition-colors bg-green-500/10 px-6 py-3 rounded-full border border-green-500/20 shadow-lg shadow-green-500/5">
+                        <IconHeadset size={18} /> Contact System Admin
+                      </a>
+                  </div>
               </footer>
 
               {showLogin && (
@@ -360,10 +355,86 @@
                   </div>
                 </div>
               )}
+
+              {/* ISOLATED QUICK TOUR MODAL */}
+              {showTour && <QuickTourModal onClose={() => setShowTour(false)} />}
             </div>
           );
         }
 
+        // =======================================================================
+        // QUICK TOUR COMPONENT (100% Isolated Sandbox)
+        // =======================================================================
+        function QuickTourModal({ onClose }) {
+            const [step, setStep] = useState(0);
+            
+            // Dummy Data - Never touches Google Sheets
+            const [mockLoc, setMockLoc] = useState({
+                id: 'tour-1', name: 'Sample Cart Location', link: '#', plusCode: 'Bengaluru, Karnataka', 
+                description: 'This is a practice card. Feel free to interact with it below!',
+                contactName: 'Tour Guide', contactPhone: '919876543210', maxVolunteers: 2, 
+                volunteers: [null, null, null], locked: false
+            });
+
+            const steps = [
+                { title: "Welcome to the Tracker!", desc: "This is a Location Card. It shows you exactly where the cart is and how many volunteers are needed today." },
+                { title: "Joining a Slot", desc: "To volunteer, simply type your name into any empty box below and click 'Join'. Try it now!" },
+                { title: "The Backup Slot", desc: "The last slot marked 'B' is the Backup. If the main slots are full, add your name here to step in if someone cancels." },
+                { title: "Mistakes & Removals", desc: "For security, you cannot delete your own name. If you need to cancel, you must click 'Contact System Admin' at the bottom of the page." },
+                { title: "Finding the Cart", desc: "Click the map picture at the bottom of the card to instantly open Google Maps for exact directions. You're ready to go!" }
+            ];
+
+            // Mock functions that only update the sandbox state
+            const mockAddVolunteer = async (locId, name, slotIndex) => {
+                let newVols = mockLoc.volunteers ? [...mockLoc.volunteers] : [null, null, null];
+                newVols[slotIndex] = name;
+                setMockLoc({ ...mockLoc, volunteers: newVols });
+                return new Promise(resolve => setTimeout(resolve, 500)); // Simulate fake save delay
+            };
+            
+            const mockUpdate = (locId, updates) => setMockLoc({ ...mockLoc, ...updates });
+
+            return (
+                <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center z-[100] p-4 sm:p-8 overflow-y-auto">
+                    
+                    {/* Tutorial Banner */}
+                    <div className="bg-blue-900/30 border border-blue-500/50 rounded-2xl p-6 max-w-2xl w-full shadow-2xl mb-8 relative">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-blue-300 hover:text-white"><IconX size={20}/></button>
+                        <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                            <span className="bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">{step + 1}</span>
+                            {steps[step].title}
+                        </h2>
+                        <p className="text-blue-100 text-sm md:text-base leading-relaxed mb-6">{steps[step].desc}</p>
+                        
+                        <div className="flex justify-between items-center">
+                            <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} className="px-4 py-2 text-sm text-blue-300 disabled:opacity-30 hover:text-white transition-colors">Previous</button>
+                            <div className="flex gap-1">
+                                {steps.map((_, i) => <div key={i} className={`h-1.5 w-6 rounded-full transition-colors ${i === step ? 'bg-blue-400' : 'bg-blue-900/50'}`}></div>)}
+                            </div>
+                            {step < steps.length - 1 ? (
+                                <button onClick={() => setStep(step + 1)} className="bg-blue-500 hover:bg-blue-400 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg">Next</button>
+                            ) : (
+                                <button onClick={onClose} className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg flex items-center gap-2"><IconCheck size={16}/> Finish</button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Dummy Interactive Card */}
+                    <div className="w-full max-w-lg pointer-events-auto">
+                        <LocationCard 
+                            location={mockLoc} isAdmin={false} 
+                            addVolunteer={mockAddVolunteer} deleteVolunteer={()=>{}}
+                            clearVolunteers={()=>{}} toggleLock={()=>{}} 
+                            updateLocationField={mockUpdate} deleteLocation={()=>{}}
+                        />
+                    </div>
+                </div>
+            );
+        }
+
+        // =======================================================================
+        // MAIN LOCATION CARD COMPONENT
+        // =======================================================================
         function LocationCard({ location, isAdmin, addVolunteer, deleteVolunteer, clearVolunteers, toggleLock, updateLocationField, deleteLocation }) {
           const [isEditingName, setIsEditingName] = useState(false);
           const [tempName, setTempName] = useState(location.name);
@@ -377,7 +448,6 @@
           const totalSlots = maxVols + 1;
           const slotsArray = Array.from({ length: totalSlots }, (_, i) => i);
           
-          // Calculate filled capacity ignoring nulls
           const filledVolsCount = location.volunteers ? location.volunteers.filter(v => v).length : 0;
 
           const adjustCapacity = (delta) => {
@@ -410,10 +480,6 @@
                   {location.description && <p className="text-sm text-slate-300 mt-2 mb-1 leading-relaxed bg-black/20 p-2 rounded-lg border border-white/5">{location.description}</p>}
                   
                   <div className="flex flex-wrap items-center gap-3 mt-3">
-                      <a href={location.link} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 flex items-center gap-1 hover:text-blue-400 transition-colors w-fit bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
-                        <IconMapPin size={14} /> Maps <IconExternalLink size={12} />
-                      </a>
-                      
                       {location.contactPhone && (
                         <a href={`https://wa.me/${formatWA(location.contactPhone)}`} target="_blank" rel="noopener noreferrer" className="text-sm text-green-400 flex items-center gap-1.5 hover:text-green-300 transition-colors w-fit bg-green-500/10 px-3 py-1.5 rounded-lg border border-green-500/20">
                           <IconPhone size={14} /> {location.contactName ? `Contact ${location.contactName}` : 'Contact'}
@@ -442,7 +508,6 @@
                 </div>
 
                 {slotsArray.map((slotIndex) => {
-                  // Carefully fetch specific slot data
                   const volunteerName = (location.volunteers && location.volunteers.length > slotIndex) ? location.volunteers[slotIndex] : null;
                   const isBackup = slotIndex === totalSlots - 1; 
                   
@@ -477,28 +542,37 @@
                 </div>
               )}
 
-              <div className="h-48 w-full bg-slate-900 border-t border-slate-800 relative group">
-                <iframe title={`Map for ${location.name}`} width="100%" height="100%" style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) opacity(0.8)' }} src={`https://maps.google.com/maps?q=${encodeURIComponent(location.plusCode || location.name)}&z=14&output=embed`} allowFullScreen></iframe>
-                <div className="absolute inset-0 bg-blue-900/10 pointer-events-none group-hover:bg-transparent transition-colors"></div>
-              </div>
+              <a href={location.link} target="_blank" rel="noopener noreferrer" className="block h-48 w-full bg-slate-900 border-t border-slate-800 relative group overflow-hidden cursor-pointer">
+                <iframe 
+                    title={`Map for ${location.name}`} 
+                    width="100%" 
+                    height="100%" 
+                    className="pointer-events-none" 
+                    style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) opacity(0.8)' }} 
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(location.plusCode || location.name)}&z=14&output=embed`} 
+                    allowFullScreen>
+                </iframe>
+                <div className="absolute inset-0 bg-blue-900/10 group-hover:bg-blue-900/40 transition-all flex items-center justify-center">
+                   <div className="opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all bg-black/80 text-white px-4 py-2 rounded-full font-medium flex items-center gap-2 shadow-xl border border-white/10">
+                       <IconExternalLink size={16} /> Open Route
+                   </div>
+                </div>
+              </a>
             </div>
           );
         }
 
-        // ⚠️ FIXED: Shows clear "Adding..." spinner during backend processing
         function VolunteerInput({ disabled, isBackup, onAdd }) {
           const inputRef = useRef(null);
           const [hasText, setHasText] = useState(false);
-          const [isSubmitting, setIsSubmitting] = useState(false); // Controls loading spinner
+          const [isSubmitting, setIsSubmitting] = useState(false); 
 
           const handleSubmit = async (e) => { 
             e.preventDefault(); 
             if (inputRef.current && inputRef.current.value.trim()) {
                 setIsSubmitting(true);
-                // Pause everything here until backend finishes saving
                 await onAdd(inputRef.current.value); 
                 
-                // If the user's internet is slow and it takes a while, clear out safely
                 if (inputRef.current) inputRef.current.value = ''; 
                 setHasText(false);
                 setIsSubmitting(false);
