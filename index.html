@@ -33,14 +33,14 @@
 <body>
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module">
-        const { useState, useEffect } = React;
+    <script type="text/babel" data-presets="react">
+        const { useState, useEffect, useRef } = React;
 
         // =======================================================================
         // ⚠️ PASTE YOUR GOOGLE SCRIPT WEB APP URL BELOW:
         // Make sure it is wrapped in exactly two quotation marks "..."
         // =======================================================================
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvBW91Ij4cXpanMbobZA82o0UaKWNQKwRi_D7UrcP4Zj7gtMdGIBhUVM3-5IbFsEbHpA/exec"; 
+        const SCRIPT_URL = "PASTE_YOUR_COPIED_URL_HERE"; 
         
         // --- Icons ---
         const IconMapPin = ({size=24, className=""}) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>;
@@ -240,7 +240,7 @@
                         <p className="text-sm text-slate-400 mb-4">Update the default WhatsApp number used for the "Contact Admin" button.</p>
                         <div className="space-y-2">
                             <label className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Admin WhatsApp Number</label>
-                            <input type="tel" value={adminPhone} onChange={handleSaveAdminPhone} className="w-full bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors" placeholder="e.g. 919876543210" />
+                            <input type="tel" value={adminPhone} onChange={handleSaveAdminPhone} className="w-full bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors caret-white" placeholder="e.g. 919876543210" />
                         </div>
                       </div>
                     </div>
@@ -251,18 +251,18 @@
                       </h2>
                       <form onSubmit={addLocation} className="flex flex-col gap-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <input type="text" placeholder="Location Name" value={newLocName} onChange={(e) => setNewLocName(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors" required />
-                          <input type="url" placeholder="Google Maps Link" value={newLocLink} onChange={(e) => setNewLocLink(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors" required />
-                          <input type="text" placeholder="Contact Person Name" value={newLocContactName} onChange={(e) => setNewLocContactName(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors" required />
-                          <input type="tel" placeholder="WhatsApp Number (e.g. 919876543210)" value={newLocContactPhone} onChange={(e) => setNewLocContactPhone(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors" required />
+                          <input type="text" placeholder="Location Name" value={newLocName} onChange={(e) => setNewLocName(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors caret-white" required />
+                          <input type="url" placeholder="Google Maps Link" value={newLocLink} onChange={(e) => setNewLocLink(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors caret-white" required />
+                          <input type="text" placeholder="Contact Person Name" value={newLocContactName} onChange={(e) => setNewLocContactName(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors caret-white" required />
+                          <input type="tel" placeholder="WhatsApp Number (e.g. 919876543210)" value={newLocContactPhone} onChange={(e) => setNewLocContactPhone(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors caret-white" required />
                           
                           <div className="bg-black/50 border border-slate-700 rounded-xl px-4 py-2 flex items-center justify-between">
                             <span className="text-sm text-slate-400">Base Volunteer Slots <br/><span className="text-xs text-slate-600">(+1 Backup auto-added)</span></span>
-                            <input type="number" min="1" max="10" value={newLocMaxVols} onChange={(e) => setNewLocMaxVols(e.target.value)} className="bg-transparent text-white text-xl text-right focus:outline-none w-16" required />
+                            <input type="number" min="1" max="10" value={newLocMaxVols} onChange={(e) => setNewLocMaxVols(e.target.value)} className="bg-transparent text-white text-xl text-right focus:outline-none w-16 caret-white" required />
                           </div>
 
-                          <input type="text" placeholder="Plus Code / Search (e.g. 6PHF+V5...)" value={newLocPlusCode} onChange={(e) => setNewLocPlusCode(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors" required />
-                          <input type="text" placeholder="Description / Instructions (Optional)" value={newLocDesc} onChange={(e) => setNewLocDesc(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors md:col-span-2" />
+                          <input type="text" placeholder="Plus Code / Search (e.g. 6PHF+V5...)" value={newLocPlusCode} onChange={(e) => setNewLocPlusCode(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors caret-white" required />
+                          <input type="text" placeholder="Description / Instructions (Optional)" value={newLocDesc} onChange={(e) => setNewLocDesc(e.target.value)} className="bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors caret-white md:col-span-2" />
                         </div>
                         <button type="submit" className="w-full md:w-auto self-end bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-medium transition-colors shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 mt-2">
                           <IconPlus size={18} /> Add Location
@@ -307,7 +307,7 @@
                     <button onClick={() => setShowLogin(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white"><IconX size={20} /></button>
                     <h2 className="text-2xl font-light mb-6 text-white text-center">Admin Access</h2>
                     <form onSubmit={handleLogin} className="space-y-4">
-                      <input type="password" placeholder="Enter Password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors text-center text-lg tracking-widest" autoFocus />
+                      <input type="password" placeholder="Enter Password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-black/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors text-center text-lg tracking-widest caret-white" autoFocus />
                       {loginError && <p className="text-red-400 text-sm text-center">{loginError}</p>}
                       <button type="submit" className="w-full bg-slate-100 hover:bg-white text-slate-900 px-6 py-3 rounded-xl font-medium transition-colors">Unlock Privileges</button>
                     </form>
@@ -349,7 +349,7 @@
                 <div className="flex-1 pr-8">
                   {isEditingName ? (
                     <div className="flex items-center gap-2">
-                      <input type="text" value={tempName} onChange={(e) => setTempName(e.target.value)} className="bg-black/50 border border-blue-500 rounded-lg px-3 py-1 text-white focus:outline-none w-full" autoFocus onKeyDown={(e) => e.key === 'Enter' && saveName()} />
+                      <input type="text" value={tempName} onChange={(e) => setTempName(e.target.value)} className="bg-black/50 border border-blue-500 rounded-lg px-3 py-1 text-white focus:outline-none w-full caret-white" autoFocus onKeyDown={(e) => e.key === 'Enter' && saveName()} />
                       <button onClick={saveName} className="text-green-400 hover:text-green-300 p-1"><IconCheck size={18} /></button>
                     </div>
                   ) : (
@@ -371,10 +371,9 @@
                         </a>
                       )}
 
-                      {location.locked ? (
+                      {/* ⚠️ FIXED: Only showing the "Locked" badge. Removed the "Open" badge entirely. */}
+                      {location.locked && (
                         <span className="flex items-center gap-1 text-xs font-medium bg-red-500/10 text-red-400 px-3 py-1.5 rounded-full border border-red-500/20"><IconLock size={12} /> Locked</span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-xs font-medium bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-500/20"><IconUnlock size={12} /> Open</span>
                       )}
                   </div>
                 </div>
@@ -438,8 +437,17 @@
         }
 
         function VolunteerInput({ disabled, isBackup, onAdd }) {
-          const [name, setName] = useState('');
-          const handleSubmit = (e) => { e.preventDefault(); onAdd(name); setName(''); };
+          const inputRef = useRef(null);
+          const [hasText, setHasText] = useState(false);
+
+          const handleSubmit = (e) => { 
+            e.preventDefault(); 
+            if (inputRef.current && inputRef.current.value.trim()) {
+                onAdd(inputRef.current.value); 
+                inputRef.current.value = ''; // Manually clear the browser input
+                setHasText(false);
+            }
+          };
 
           if (disabled) return (
             <div className="bg-black/20 rounded-xl px-4 py-2.5 border border-dashed border-slate-700 flex items-center justify-between opacity-50">
@@ -451,10 +459,16 @@
           return (
             <form onSubmit={handleSubmit} className="flex items-center gap-2 w-full relative">
               <div className="relative flex-1">
-                <input type="text" placeholder={isBackup ? "Enter backup name..." : "Enter name..."} value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-black/40 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition-colors pr-24" />
+                <input 
+                  type="text" 
+                  ref={inputRef} 
+                  onChange={(e) => setHasText(e.target.value.trim().length > 0)}
+                  placeholder={isBackup ? "Enter backup name..." : "Enter name..."} 
+                  className="w-full bg-black/40 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors pr-24 caret-white" 
+                />
                 {isBackup && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-orange-500/70 uppercase tracking-widest pointer-events-none">Backup</span>}
               </div>
-              <button type="submit" disabled={!name.trim()} className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 px-4 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Join</button>
+              <button type="submit" disabled={!hasText} className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 px-4 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Join</button>
             </form>
           );
         }
