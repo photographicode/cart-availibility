@@ -131,15 +131,20 @@
             return () => clearInterval(interval);
           }, []);
 
-          // Helper to send updates to Google Sheets
-          const updateSheet = (action, payload) => {
+          // Helper to send updates to Google Sheets - NOW ASYNCHRONOUS
+          const updateSheet = async (action, payload) => {
              if(!SCRIPT_URL.startsWith("http")) return;
              syncLock.current = Date.now(); // Lock auto-refresh temporarily
-             fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' }, 
-                body: JSON.stringify({ action, payload })
-             }).catch(console.error);
+             try {
+                await fetch(SCRIPT_URL, {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'text/plain' }, 
+                   body: JSON.stringify({ action, payload })
+                });
+             } catch(err) {
+                console.error("Database update failed:", err);
+             }
+             syncLock.current = Date.now(); // Reset lock after completion so next interval is delayed
           };
 
           const handleLogin = (e) => {
@@ -167,7 +172,7 @@
             };
             
             setLocations([...locations, newLoc]);
-            updateSheet('ADD_LOCATION', newLoc);
+            updateSheet('ADD_LOCATION', newLoc); // Admin action: optimistic update
             
             setNewLocName(''); setNewLocLink(''); setNewLocPlusCode(''); setNewLocDesc('');
             setNewLocContactName(''); setNewLocContactPhone(''); setNewLocMaxVols(4);
@@ -204,7 +209,8 @@
               updateLocationField(locId, { volunteers: newVols, locked: false });
           };
 
-          const addVolunteer = (locId, name, slotIndex) => {
+          // ⚠️ FIXED: Now async to prevent disappearing names
+          const addVolunteer = async (locId, name, slotIndex) => {
             if (!name.trim()) return;
             const loc = locations.find(l => l.id === locId);
             const totalCapacity = (parseInt(loc.maxVolunteers, 10) || 4) + 1; 
@@ -225,7 +231,13 @@
             const filledCount = newVols.filter(v => v).length;
             const isNowLocked = filledCount >= totalCapacity;
             
-            updateLocationField(locId, { volunteers: newVols, locked: isNowLocked });
+            // WAIT for the database to finish saving before updating the screen
+            await updateSheet('UPDATE_LOCATION', { id: locId, volunteers: newVols, locked: isNowLocked });
+            
+            // ONLY THEN update local React state
+            setLocations(prevLocations => prevLocations.map(l => 
+                l.id === locId ? { ...l, volunteers: newVols, locked: isNowLocked } : l
+            ));
           };
 
           return (
@@ -408,7 +420,6 @@
                         </a>
                       )}
 
-                      {/* Only showing the "Locked" badge. Removed the "Open" badge completely. */}
                       {location.locked && (
                         <span className="flex items-center gap-1 text-xs font-medium bg-red-500/10 text-red-400 px-3 py-1.5 rounded-full border border-red-500/20"><IconLock size={12} /> Locked</span>
                       )}
@@ -474,16 +485,23 @@
           );
         }
 
+        // ⚠️ FIXED: Shows clear "Adding..." spinner during backend processing
         function VolunteerInput({ disabled, isBackup, onAdd }) {
           const inputRef = useRef(null);
           const [hasText, setHasText] = useState(false);
+          const [isSubmitting, setIsSubmitting] = useState(false); // Controls loading spinner
 
-          const handleSubmit = (e) => { 
+          const handleSubmit = async (e) => { 
             e.preventDefault(); 
             if (inputRef.current && inputRef.current.value.trim()) {
-                onAdd(inputRef.current.value); 
-                inputRef.current.value = ''; // Manually clear the browser input
+                setIsSubmitting(true);
+                // Pause everything here until backend finishes saving
+                await onAdd(inputRef.current.value); 
+                
+                // If the user's internet is slow and it takes a while, clear out safely
+                if (inputRef.current) inputRef.current.value = ''; 
                 setHasText(false);
+                setIsSubmitting(false);
             }
           };
 
@@ -500,13 +518,25 @@
                 <input 
                   type="text" 
                   ref={inputRef} 
+                  disabled={isSubmitting}
                   onChange={(e) => setHasText(e.target.value.trim().length > 0)}
                   placeholder={isBackup ? "Enter backup name..." : "Enter name..."} 
-                  className="w-full bg-black/40 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors pr-24 caret-white" 
+                  className="w-full bg-black/40 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors pr-24 caret-white disabled:opacity-50" 
                 />
                 {isBackup && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-orange-500/70 uppercase tracking-widest pointer-events-none">Backup</span>}
               </div>
-              <button type="submit" disabled={!hasText} className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 px-4 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Join</button>
+              
+              <button 
+                type="submit" 
+                disabled={!hasText || isSubmitting} 
+                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 px-4 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[80px] flex items-center justify-center gap-1"
+              >
+                {isSubmitting ? (
+                    <><IconRotateCcw size={16} className="animate-spin" /> Adding</>
+                ) : (
+                    "Join"
+                )}
+              </button>
             </form>
           );
         }
