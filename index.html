@@ -7,8 +7,9 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <style>
@@ -32,11 +33,12 @@
 <body>
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script type="text/babel" data-presets="env,react">
         const { useState, useEffect } = React;
 
         // =======================================================================
         // ⚠️ PASTE YOUR GOOGLE SCRIPT WEB APP URL BELOW:
+        // Make sure it is wrapped in exactly two quotation marks "..."
         // =======================================================================
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvBW91Ij4cXpanMbobZA82o0UaKWNQKwRi_D7UrcP4Zj7gtMdGIBhUVM3-5IbFsEbHpA/exec"; 
         
@@ -57,6 +59,22 @@
         const IconHeadset = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>;
         const IconSettings = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 
+        // Helper: Safely Format WhatsApp Numbers
+        const formatWA = (phone) => {
+            if (!phone) return "";
+            return String(phone).replace(/[^0-9]/g, '');
+        };
+
+        // Helper: Safely get Admin Phone from LocalStorage
+        const getSavedAdminPhone = () => {
+            try { return localStorage.getItem('adminPhone') || '919876543210'; } 
+            catch (e) { return '919876543210'; }
+        };
+
+        const saveAdminPhone = (val) => {
+            try { localStorage.setItem('adminPhone', val); } catch (e) {}
+        };
+
         function App() {
           const [isAdmin, setIsAdmin] = useState(false);
           const [showLogin, setShowLogin] = useState(false);
@@ -67,10 +85,10 @@
           const [isLoading, setIsLoading] = useState(true);
 
           // Admin Settings
-          const [adminPhone, setAdminPhone] = useState(localStorage.getItem('adminPhone') || '919876543210');
+          const [adminPhone, setAdminPhone] = useState(getSavedAdminPhone());
           const handleSaveAdminPhone = (e) => {
               setAdminPhone(e.target.value);
-              localStorage.setItem('adminPhone', e.target.value);
+              saveAdminPhone(e.target.value);
           };
 
           // New Location Form States
@@ -80,13 +98,13 @@
           const [newLocDesc, setNewLocDesc] = useState('');
           const [newLocContactName, setNewLocContactName] = useState('');
           const [newLocContactPhone, setNewLocContactPhone] = useState('');
-          const [newLocMaxVols, setNewLocMaxVols] = useState(4); // Base volunteers (excluding 1 backup)
+          const [newLocMaxVols, setNewLocMaxVols] = useState(4);
 
           // 1. Fetch initial data from Google Sheets
           const fetchLocations = async () => {
-            if (SCRIPT_URL === "PASTE_YOUR_COPIED_LINK_HERE") {
+            if (SCRIPT_URL === "PASTE_YOUR_COPIED_URL_HERE" || !SCRIPT_URL.startsWith("http")) {
               setIsLoading(false);
-              return; // Stop if URL isn't set yet
+              return; 
             }
             try {
               const res = await fetch(SCRIPT_URL);
@@ -106,8 +124,9 @@
             return () => clearInterval(interval);
           }, []);
 
-          // Helper to send updates to Google Sheets in the background
+          // Helper to send updates to Google Sheets
           const updateSheet = (action, payload) => {
+             if(!SCRIPT_URL.startsWith("http")) return;
              fetch(SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' }, 
@@ -134,7 +153,7 @@
               description: newLocDesc,
               contactName: newLocContactName,
               contactPhone: newLocContactPhone,
-              maxVolunteers: parseInt(newLocMaxVols) || 4, // Base slots
+              maxVolunteers: parseInt(newLocMaxVols, 10) || 4, 
               volunteers: [], 
               locked: false
             };
@@ -142,12 +161,10 @@
             setLocations([...locations, newLoc]);
             updateSheet('ADD_LOCATION', newLoc);
             
-            // Reset Form
             setNewLocName(''); setNewLocLink(''); setNewLocPlusCode(''); setNewLocDesc('');
             setNewLocContactName(''); setNewLocContactPhone(''); setNewLocMaxVols(4);
           };
 
-          // Generic update method to avoid repeating map logic
           const updateLocationField = (locId, updates) => {
               setLocations(locations.map(l => l.id === locId ? { ...l, ...updates } : l));
               updateSheet('UPDATE_LOCATION', { id: locId, ...updates });
@@ -175,7 +192,7 @@
           const addVolunteer = (locId, name) => {
             if (!name.trim()) return;
             const loc = locations.find(l => l.id === locId);
-            const totalCapacity = (loc.maxVolunteers || 4) + 1; // +1 for Backup slot
+            const totalCapacity = (parseInt(loc.maxVolunteers, 10) || 4) + 1; 
             
             if (!loc || loc.locked || loc.volunteers.length >= totalCapacity) return;
             
@@ -191,8 +208,7 @@
                   Cart Witnessing <span className="font-semibold text-blue-400">Availability</span>
                 </h1>
                 <div className="flex items-center gap-3">
-                  {/* ADMIN WHATSAPP LINK - STRICTLY FORMATTED */}
-                  <a href={`https://wa.me/${adminPhone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-green-400 hover:text-green-300 transition-colors bg-green-500/10 px-4 py-2 rounded-full border border-green-500/20 shadow-lg shadow-green-500/5">
+                  <a href={`https://wa.me/${formatWA(adminPhone)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-green-400 hover:text-green-300 transition-colors bg-green-500/10 px-4 py-2 rounded-full border border-green-500/20 shadow-lg shadow-green-500/5">
                     <IconHeadset size={16} /> <span className="hidden md:inline">Contact Admin</span>
                   </a>
                   {isAdmin ? (
@@ -208,16 +224,14 @@
               </header>
 
               <main className="max-w-6xl mx-auto p-6 md:p-12 space-y-8">
-                {SCRIPT_URL === "PASTE_YOUR_COPIED_URL_HERE" && (
+                {(!SCRIPT_URL.startsWith("http")) && (
                     <div className="bg-orange-500/10 border border-orange-500/30 text-orange-400 p-4 rounded-xl text-center shadow-lg">
-                        ⚠️ <b>Setup Incomplete:</b> You need to paste your Google Apps Script URL into the HTML code where it says <code>SCRIPT_URL</code>.
+                        ⚠️ <b>Setup Incomplete:</b> You need to paste your Google Apps Script URL into the HTML code where it says <code>SCRIPT_URL</code>. Make sure it is wrapped in quotes!
                     </div>
                 )}
 
                 {isAdmin && (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-                    
-                    {/* Admin Global Settings */}
                     <div className="bg-[#1e293b]/60 border border-purple-500/20 p-6 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col justify-between">
                       <div>
                         <h2 className="text-lg font-medium text-purple-300 mb-4 flex items-center gap-2">
@@ -231,7 +245,6 @@
                       </div>
                     </div>
 
-                    {/* Add New Location */}
                     <div className="lg:col-span-2 bg-[#1e293b]/40 border border-blue-500/20 p-6 rounded-2xl backdrop-blur-md shadow-2xl">
                       <h2 className="text-lg font-medium text-blue-300 mb-4 flex items-center gap-2">
                         <IconMapPin size={18} /> Add New Location
@@ -314,8 +327,7 @@
             setIsEditingName(false);
           };
 
-          // Calculate Dynamic Slots (Base + 1 Backup)
-          const maxVols = location.maxVolunteers || 4;
+          const maxVols = parseInt(location.maxVolunteers, 10) || 4;
           const totalSlots = maxVols + 1;
           const slotsArray = Array.from({ length: totalSlots }, (_, i) => i);
 
@@ -353,9 +365,8 @@
                         <IconMapPin size={14} /> Maps <IconExternalLink size={12} />
                       </a>
                       
-                      {/* LOCATION WHATSAPP LINK - STRICTLY FORMATTED */}
                       {location.contactPhone && (
-                        <a href={`https://wa.me/${location.contactPhone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-sm text-green-400 flex items-center gap-1.5 hover:text-green-300 transition-colors w-fit bg-green-500/10 px-3 py-1.5 rounded-lg border border-green-500/20">
+                        <a href={`https://wa.me/${formatWA(location.contactPhone)}`} target="_blank" rel="noopener noreferrer" className="text-sm text-green-400 flex items-center gap-1.5 hover:text-green-300 transition-colors w-fit bg-green-500/10 px-3 py-1.5 rounded-lg border border-green-500/20">
                           <IconPhone size={14} /> {location.contactName ? `Contact ${location.contactName}` : 'Contact'}
                         </a>
                       )}
@@ -385,7 +396,7 @@
 
                 {slotsArray.map((slotIndex) => {
                   const volunteerName = location.volunteers ? location.volunteers[slotIndex] : undefined;
-                  const isBackup = slotIndex === totalSlots - 1; // Last slot is always backup
+                  const isBackup = slotIndex === totalSlots - 1; 
                   
                   return (
                     <div key={slotIndex} className="flex items-center gap-3">
